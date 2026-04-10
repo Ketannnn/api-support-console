@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>API Support Console</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #060810;
+      --surface: #0d1117;
+      --surface2: #111827;
+      --border: rgba(99,211,255,0.12);
+      --border-hot: rgba(99,211,255,0.45);
+      --cyan: #63d3ff;
+      --cyan-dim: rgba(99,211,255,0.15);
+      --green: #39ff9a;
+      --green-dim: rgba(57,255,154,0.13);
+      --red: #ff4d6d;
+      --red-dim: rgba(255,77,109,0.13);
+      --yellow: #ffd166;
+      --yellow-dim: rgba(255,209,102,0.13);
+      --text: #e8eaf0;
+      --muted: #5a6378;
+      --mono: 'Space Mono', monospace;
+      --sans: 'Syne', sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── GRID BACKGROUND ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(99,211,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(99,211,255,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── GLOW ORBS ── */
+    body::after {
+      content: '';
+      position: fixed;
+      top: -200px; left: -200px;
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(99,211,255,0.07) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+      animation: drift 12s ease-in-out infinite alternate;
+    }
+
+    @keyframes drift {
+      from { transform: translate(0,0); }
+      to   { transform: translate(120px, 80px); }
+    }
+
+    .orb2 {
+      position: fixed;
+      bottom: -150px; right: -150px;
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(57,255,154,0.05) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+      animation: drift2 15s ease-in-out infinite alternate;
+    }
+
+    @keyframes drift2 {
+      from { transform: translate(0,0); }
+      to   { transform: translate(-80px, -60px); }
+    }
+
+    /* ── LAYOUT ── */
+    .wrapper {
+      position: relative;
+      z-index: 1;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+    }
+
+    /* ── HEADER ── */
+    header {
+      margin-bottom: 52px;
+      animation: fadeUp 0.6s ease both;
+    }
+
+    .header-top {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 10px;
+    }
+
+    .logo-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--cyan-dim);
+      border: 1px solid var(--border-hot);
+      border-radius: 8px;
+      padding: 5px 12px;
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      color: var(--cyan);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .pulse-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    h1 {
+      font-family: var(--sans);
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: 800;
+      letter-spacing: -1.5px;
+      line-height: 1;
+      background: linear-gradient(135deg, #fff 30%, var(--cyan) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 0.95rem;
+      font-family: var(--mono);
+      letter-spacing: 0.3px;
+    }
+
+    /* ── STATS ROW ── */
+    .stats-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 32px;
+      flex-wrap: wrap;
+      animation: fadeUp 0.6s 0.1s ease both;
+    }
+
+    .stat-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      padding: 7px 16px;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: var(--muted);
+      transition: border-color 0.2s, color 0.2s;
+    }
+
+    .stat-pill:hover { border-color: var(--border-hot); color: var(--cyan); }
+    .stat-pill span { font-weight: 700; color: var(--cyan); }
+
+    /* ── REQUEST PANEL ── */
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      margin-bottom: 28px;
+      animation: fadeUp 0.6s 0.15s ease both;
+      transition: border-color 0.3s;
+    }
+
+    .panel:hover { border-color: var(--border-hot); }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(99,211,255,0.03);
+    }
+
+    .panel-header-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+    }
+
+    .panel-title {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .panel-body { padding: 22px; }
+
+    /* ── URL ROW ── */
+    .url-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .method-select {
+      appearance: none;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--cyan);
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      cursor: pointer;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      min-width: 90px;
+    }
+
+    .method-select:focus {
+      border-color: var(--cyan);
+      box-shadow: 0 0 0 3px rgba(99,211,255,0.1);
+    }
+
+    .url-input {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 0.85rem;
+      padding: 12px 16px;
+      border-radius: 10px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .url-input::placeholder { color: var(--muted); }
+
+    .url-input:focus {
+      border-color: var(--cyan);
+      box-shadow: 0 0 0 3px rgba(99,211,255,0.1);
+    }
+
+    /* ── BODY TEXTAREA ── */
+    .body-label {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    .body-textarea {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--green);
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      padding: 14px 16px;
+      border-radius: 10px;
+      resize: vertical;
+      min-height: 90px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+
+    .body-textarea::placeholder { color: var(--muted); }
+
+    .body-textarea:focus {
+      border-color: var(--green);
+      box-shadow: 0 0 0 3px rgba(57,255,154,0.08);
+    }
+
+    /* ── SEND BUTTON ── */
+    .send-btn {
+      width: 100%;
+      padding: 14px;
+      background: var(--cyan);
+      color: #060810;
+      border: none;
+      border-radius: 10px;
+      font-family: var(--sans);
+      font-size: 0.95rem;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.15s, box-shadow 0.2s;
+    }
+
+    .send-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.2), transparent);
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .send-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 30px rgba(99,211,255,0.35);
+    }
+
+    .send-btn:hover::before { opacity: 1; }
+    .send-btn:active { transform: translateY(0); }
+
+    /* ── ERROR ── */
+    .error-box {
+      background: var(--red-dim);
+      border: 1px solid rgba(255,77,109,0.4);
+      color: var(--red);
+      padding: 14px 18px;
+      border-radius: 10px;
+      margin-bottom: 24px;
+      font-family: var(--mono);
+      font-size: 0.85rem;
+      animation: fadeUp 0.3s ease both;
+    }
+
+    /* ── RESULT CARD ── */
+    .result-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      margin-bottom: 28px;
+      animation: fadeUp 0.4s ease both;
+    }
+
+    .result-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,0.02);
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 12px;
+      border-radius: 6px;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+
+    .badge-method { background: rgba(99,211,255,0.12); color: var(--cyan); border: 1px solid rgba(99,211,255,0.25); }
+    .badge-ok     { background: var(--green-dim); color: var(--green); border: 1px solid rgba(57,255,154,0.3); }
+    .badge-err    { background: var(--red-dim); color: var(--red); border: 1px solid rgba(255,77,109,0.3); }
+    .badge-warn   { background: var(--yellow-dim); color: var(--yellow); border: 1px solid rgba(255,209,102,0.3); }
+
+    .result-url {
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      color: var(--muted);
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .result-time {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: var(--muted);
+      background: var(--surface2);
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+    }
+
+    .result-body { padding: 20px; }
+
+    .result-body pre {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px;
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      color: var(--green);
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 380px;
+      overflow-y: auto;
+      line-height: 1.7;
+    }
+
+    .result-body pre::-webkit-scrollbar { width: 6px; }
+    .result-body pre::-webkit-scrollbar-track { background: transparent; }
+    .result-body pre::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* ── HISTORY SECTION ── */
+    .history-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      animation: fadeUp 0.6s 0.2s ease both;
+    }
+
+    .history-title {
+      font-family: var(--sans);
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .history-count {
+      background: var(--cyan-dim);
+      color: var(--cyan);
+      border: 1px solid rgba(99,211,255,0.2);
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      padding: 2px 8px;
+      border-radius: 100px;
+    }
+
+    .clear-btn {
+      background: transparent;
+      border: 1px solid rgba(255,77,109,0.35);
+      color: var(--red);
+      padding: 6px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.5px;
+      transition: background 0.2s, box-shadow 0.2s;
+    }
+
+    .clear-btn:hover {
+      background: var(--red-dim);
+      box-shadow: 0 0 16px rgba(255,77,109,0.15);
+    }
+
+    /* ── TABLE ── */
+    .table-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      animation: fadeUp 0.6s 0.25s ease both;
+    }
+
+    table { width: 100%; border-collapse: collapse; }
+
+    thead tr {
+      background: rgba(99,211,255,0.04);
+      border-bottom: 1px solid var(--border);
+    }
+
+    thead th {
+      padding: 12px 16px;
+      text-align: left;
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 400;
+    }
+
+    tbody tr {
+      border-top: 1px solid rgba(99,211,255,0.05);
+      transition: background 0.15s;
+    }
+
+    tbody tr:hover { background: rgba(99,211,255,0.03); }
+
+    tbody td {
+      padding: 13px 16px;
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      color: var(--muted);
+      max-width: 220px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    td.url-cell { color: var(--text); }
+
+    .no-logs {
+      text-align: center;
+      padding: 52px 20px;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      line-height: 2;
+    }
+
+    .no-logs-icon { font-size: 2rem; display: block; margin-bottom: 10px; opacity: 0.4; }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── SCROLLBAR ── */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    /* ── WINDOW DOTS (decorative) ── */
+    .win-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+    .win-red    { background: #ff5f57; }
+    .win-yellow { background: #febc2e; }
+    .win-green  { background: #28c840; }
+  </style>
+</head>
+<body>
+
+<div class="orb2"></div>
+
+<div class="wrapper">
+
+  <!-- HEADER -->
+  <header>
+    <div class="header-top">
+      <div class="logo-badge">
+        <div class="pulse-dot"></div>
+        LIVE
+      </div>
+    </div>
+    <h1>API Support Console</h1>
+    <p class="subtitle">// send requests · inspect responses · debug APIs</p>
+  </header>
+
+  <!-- STATS PILLS -->
+  <div class="stats-row">
+    <div class="stat-pill">Status <span>ONLINE</span></div>
+    <div class="stat-pill">Methods <span>GET · POST</span></div>
+    <div class="stat-pill">Storage <span>SQLite</span></div>
+    <div class="stat-pill">Runtime <span>Flask 3.x</span></div>
+  </div>
+
+  <!-- REQUEST PANEL -->
+  <div class="panel">
+    <div class="panel-header">
+      <span class="win-dot win-red"></span>
+      <span class="win-dot win-yellow"></span>
+      <span class="win-dot win-green"></span>
+      <span class="panel-title" style="margin-left:8px;">New Request</span>
+    </div>
+    <div class="panel-body">
+      <form method="POST">
+        <div class="url-row">
+          <select name="method" class="method-select">
+            <option value="GET">GET</option>
+            <option value="POST">POST</option>
+          </select>
+          <input type="text" name="url" class="url-input"
+            placeholder="https://jsonplaceholder.typicode.com/posts/1" required />
+        </div>
+
+        <label class="body-label">Request Body — JSON (POST only)</label>
+        <textarea name="body" class="body-textarea"
+          placeholder='{"title": "Hello", "body": "World", "userId": 1}'></textarea>
+
+        <button type="submit" class="send-btn">▶ &nbsp; Send Request</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ERROR -->
+  {% if error %}
+  <div class="error-box">⚠ &nbsp;{{ error }}</div>
+  {% endif %}
+
+  <!-- RESULT -->
+  {% if result %}
+  <div class="result-card">
+    <div class="result-header">
+      <span class="badge badge-method">{{ result.method }}</span>
+
+      {% if result.status_code >= 200 and result.status_code < 300 %}
+        <span class="badge badge-ok">{{ result.status_code }} OK</span>
+      {% elif result.status_code >= 400 and result.status_code < 500 %}
+        <span class="badge badge-err">{{ result.status_code }} CLIENT ERR</span>
+      {% else %}
+        <span class="badge badge-warn">{{ result.status_code }}</span>
+      {% endif %}
+
+      <span class="result-url">{{ result.url }}</span>
+      <span class="result-time">⏱ {{ result.response_time }} ms</span>
+    </div>
+    <div class="result-body">
+      <pre>{{ result.response_body }}</pre>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- HISTORY HEADER -->
+  <div class="history-header">
+    <div class="history-title">
+      Request History
+      {% if logs %}
+      <span class="history-count">{{ logs|length }} logged</span>
+      {% endif %}
+    </div>
+    {% if logs %}
+    <form method="POST" action="/clear">
+      <button class="clear-btn" type="submit">🗑 Clear All</button>
+    </form>
+    {% endif %}
+  </div>
+
+  <!-- HISTORY TABLE -->
+  <div class="table-panel">
+    {% if logs %}
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Method</th>
+          <th>URL</th>
+          <th>Status</th>
+          <th>Time (ms)</th>
+          <th>Timestamp</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in logs %}
+        <tr>
+          <td>{{ log[0] }}</td>
+          <td><span class="badge badge-method">{{ log[2] }}</span></td>
+          <td class="url-cell">{{ log[1] }}</td>
+          <td>
+            {% if log[4] >= 200 and log[4] < 300 %}
+              <span style="color:var(--green)">{{ log[4] }}</span>
+            {% elif log[4] >= 400 %}
+              <span style="color:var(--red)">{{ log[4] }}</span>
+            {% else %}
+              <span style="color:var(--yellow)">{{ log[4] }}</span>
+            {% endif %}
+          </td>
+          <td style="color:var(--cyan)">{{ log[6] }}</td>
+          <td>{{ log[7] }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="no-logs">
+      <span class="no-logs-icon">⚡</span>
+      No requests logged yet.<br>Send your first request above.
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+</body>
+</html>
